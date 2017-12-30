@@ -65,7 +65,7 @@ El jugador `nick` se retira del juego.
 Responden al siguiente formato:
 
 ```
-<message> | <board><delimiter><history><delimiter><message>
+<message> | <message><delimiter><history><delimiter><board>
 ```
 
 donde cada uno de estos tokens tienen el siguiente significado:
