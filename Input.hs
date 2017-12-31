@@ -1,4 +1,8 @@
-module Input (parseMessage) where
+module Input ( Channel
+             , Nick
+             , SANMove
+             , parseMessage
+             ) where
 
 {-
 
@@ -28,6 +32,7 @@ data Message = Session Channel
 -- | Helpers
 word :: Parser String
 word = many1 letter
+
 
 -- | Parsers para los distintos mensajes
 session :: Parser Message
@@ -73,6 +78,7 @@ resign = do string "RESIGN"
             nick <- word
             return (Resign nick)
 
+            
 -- | Parser principal
 parserMsg :: Parser Message
 parserMsg = session
