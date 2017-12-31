@@ -13,7 +13,6 @@ import Text.Parsec.String (Parser)
 import Control.Applicative ((<*))
 
 type Channel = String
-type Date    = String
 type Nick    = String
 type SANMove = String
 
