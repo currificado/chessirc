@@ -18,8 +18,8 @@ data Result  = WhiteWon
 
 data Game = Game { site    :: Channel
                  , date    :: Date
-                 , white   :: Nick
-                 , black   :: Nick
+                 , white   :: Maybe Nick
+                 , black   :: Maybe Nick
                  , board   :: Board
                  , history :: [(Int, SANMove, Maybe SANMove)]
                  , result  :: Maybe Result
@@ -47,8 +47,9 @@ stringifyBoard :: Color -> Board -> String
 stringifyBoard perpective brd =
     unlines ( [show (y+1) ++ " " 
                ++ concat([stringifySquare (color (x,y)) (Chess.board brd ! (x,y)) | x<-xlist])
-               ++ "<NORMAL>" | y<-ylist ] ++ ["   " ++ intercalate "  " (map (\c -> [c]) columns)] )
+               ++ "<NORMAL>" | y<-ylist] ++ ["   " ++ intercalate "  " (map (\c -> [c]) columns)] )
     where color (x,y) = if odd (x+y) then White else Black
           xlist       = if perpective == White then [0..7] else [7,6..0]
           ylist       = if perpective == White then [7,6..0] else [0..7]
           columns     = if perpective == White then ['a'..'h'] else ['h','g'..'a']
+    

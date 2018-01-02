@@ -1,4 +1,5 @@
 module Input ( Channel
+             , Message(..)
              , Nick
              , SANMove
              , parseMessage
