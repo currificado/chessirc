@@ -11,7 +11,7 @@ Parser para los mensajes entrantes
 
 -}
 
-import Text.Parsec ((<|>), ParseError, eof, many1, parse)
+import Text.Parsec ((<|>), ParseError, eof, many1, parse, try)
 import Text.Parsec.Char (alphaNum, char, letter, space, string)
 import Text.Parsec.String (Parser)
 
@@ -82,9 +82,9 @@ resign = do string "RESIGN"
             
 -- | Parser principal
 parserMsg :: Parser Message
-parserMsg = session
+parserMsg = try session
         <|> close
-        <|> register
+        <|> try register
         <|> start
         <|> move
         <|> draw
