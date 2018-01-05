@@ -56,7 +56,6 @@ gameSession game handle addr = do
                                                            else
                                                                do let g' = fromJust g
                                                                   hPutStrLn handle $ showRecentHistory (head $ history g')
-                                                                  hPutStrLn handle delimiter
                                                                   case (result g') of
                                                                       Nothing -> do hPutStrLn handle (showWhoMoves g')
                                                                                     hPutStrLn handle delimiter
@@ -69,17 +68,23 @@ gameSession game handle addr = do
                                                                                     hPutStr handle (stringifyBoard (turn brd) brd)
                                                                                     handleCLOSE handle addr
                         Right (Input.Draw nick     ) -> do g <- handleDRAW nick game handle
-                                                           let g' = fromJust g
-                                                           case (result g') of
-                                                               Nothing -> gameSession g handle addr
-                                                               Just res-> do hPutStrLn handle (show res)
-                                                                             handleCLOSE handle addr
+                                                           if g == Nothing then
+                                                               gameSession game handle addr
+                                                           else
+                                                               do let g' = fromJust g
+                                                                  case (result g') of
+                                                                      Nothing -> gameSession g handle addr
+                                                                      Just res-> do hPutStrLn handle (show res)
+                                                                                    handleCLOSE handle addr
                         Right (Resign     nick     ) -> do g <- handleRESIGN nick game handle
-                                                           let g' = fromJust g
-                                                           case (result g') of
-                                                               Nothing -> gameSession g handle addr
-                                                               Just res-> do hPutStrLn handle (show res)
-                                                                             handleCLOSE handle addr
+                                                           if g == Nothing then
+                                                               gameSession game handle addr
+                                                           else
+                                                               do let g' = fromJust g
+                                                                  case (result g') of
+                                                                      Nothing -> gameSession g handle addr
+                                                                      Just res-> do hPutStrLn handle (show res)
+                                                                                    handleCLOSE handle addr
         True  -> do handleCLOSE handle addr
     where
         chomp       = reverse . dropWhile isSpace . reverse -- strip trailing spaces (including newlines)
