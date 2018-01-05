@@ -18,7 +18,7 @@ data Result  = WhiteWon
 instance Show Result where
     show WhiteWon  = "Blancas ganan. 1-0"
     show BlackWon  = "Negras ganan. 0-1"
-    show Game.Draw = "Tablas. 1/2-1/2"
+    show Game.Draw = "Tablas. ½-½"
 
 type MoveHistory = [(Int, SANMove, Maybe SANMove)]
 
