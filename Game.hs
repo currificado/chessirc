@@ -22,13 +22,14 @@ instance Show Result where
 
 type MoveHistory = [(Int, SANMove, Maybe SANMove)]
 
-data Game = Game { site    :: Channel
-                 , date    :: Day
-                 , white   :: Maybe Nick
-                 , black   :: Maybe Nick
-                 , board   :: Board
-                 , history :: MoveHistory
-                 , result  :: Maybe Result
+data Game = Game { site      :: Channel
+                 , date      :: Day
+                 , drawOffer :: Bool
+                 , white     :: Maybe Nick
+                 , black     :: Maybe Nick
+                 , board     :: Board
+                 , history   :: MoveHistory
+                 , result    :: Maybe Result
                  } deriving Eq
 
 stringifyPiece :: Maybe Piece -> String

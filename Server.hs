@@ -51,25 +51,35 @@ gameSession game handle addr = do
                         Right (Start      nick     ) -> do g <- handleSTART nick game handle
                                                            gameSession g handle addr
                         Right (Move       nick move) -> do g <- handleMOVE nick move game handle
-                                                           if g == game then -- el estado del juego no cambió
+                                                           if g == game then -- game state didn't change
                                                                gameSession game handle addr
                                                            else
                                                                do let g' = fromJust g
                                                                   hPutStrLn handle $ showRecentHistory (head $ history g')
                                                                   hPutStrLn handle delimiter
                                                                   case (result g') of
-                                                                       Nothing -> do hPutStrLn handle (showWhoMoves g')
-                                                                                     hPutStrLn handle delimiter
-                                                                                     let brd = G.board g'
-                                                                                     hPutStr handle (stringifyBoard (turn brd) brd)
-                                                                                     gameSession g handle addr
-                                                                       Just res-> do hPutStrLn handle (show res)
-                                                                                     hPutStrLn handle delimiter
-                                                                                     let brd = G.board g'
-                                                                                     hPutStr handle (stringifyBoard (turn brd) brd)
-                                                                                     handleCLOSE handle addr
-                        Right (Input.Draw nick     ) -> hPutStrLn handle (show (Input.Draw nick))
-                        Right (Resign     nick     ) -> hPutStrLn handle (show (Resign nick))
+                                                                      Nothing -> do hPutStrLn handle (showWhoMoves g')
+                                                                                    hPutStrLn handle delimiter
+                                                                                    let brd = G.board g'
+                                                                                    hPutStr handle (stringifyBoard (turn brd) brd)
+                                                                                    gameSession g handle addr
+                                                                      Just res-> do hPutStrLn handle (show res)
+                                                                                    hPutStrLn handle delimiter
+                                                                                    let brd = G.board g'
+                                                                                    hPutStr handle (stringifyBoard (turn brd) brd)
+                                                                                    handleCLOSE handle addr
+                        Right (Input.Draw nick     ) -> do g <- handleDRAW nick game handle
+                                                           let g' = fromJust g
+                                                           case (result g') of
+                                                               Nothing -> gameSession g handle addr
+                                                               Just res-> do hPutStrLn handle (show res)
+                                                                             handleCLOSE handle addr
+                        Right (Resign     nick     ) -> do g <- handleRESIGN nick game handle
+                                                           let g' = fromJust g
+                                                           case (result g') of
+                                                               Nothing -> gameSession g handle addr
+                                                               Just res-> do hPutStrLn handle (show res)
+                                                                             handleCLOSE handle addr
         True  -> do handleCLOSE handle addr
     where
         chomp       = reverse . dropWhile isSpace . reverse -- strip trailing spaces (including newlines)
@@ -92,7 +102,7 @@ handleSESSION chan game handle =
     case game of
          Nothing -> do hPutStrLn handle ("Se ha iniciado una sesión en " ++ chan ++ ".")
                        t <- getCurrentTime 
-                       return (Just (Game chan (utctDay t) Nothing Nothing defaultBoard [] Nothing))
+                       return (Just (Game chan (utctDay t) False Nothing Nothing defaultBoard [] Nothing))
          Just g  -> do hPutStrLn handle ("Ya hay una sesión activa en " ++ site g ++ ".")
                        return (Just g)
 
@@ -104,26 +114,26 @@ handleCLOSE handle addr = do
 handleREGISTER :: Nick -> Maybe Game -> Handle -> IO (Maybe Game)
 handleREGISTER nick game handle = do
     case game of
-         Nothing                                   -> do hPutStrLn handle "Primero debe iniciar una sesión."
-                                                         return game
-         Just g@(Game _ _ Nothing  Nothing  _ _ _) -> do hPutStrLn handle ("Se ha registrado '" ++ nick ++ "' para jugar con Blancas.")
-                                                         return (Just (g { white = Just nick }))
-         Just g@(Game _ _ (Just _) Nothing  _ _ _) -> do hPutStrLn handle ("Se ha registrado '" ++ nick ++ "' para jugar con Negras.")
-                                                         return (Just (g { black = Just nick }))
-         Just g@(Game _ _ (Just _) (Just _) _ _ _) -> do hPutStrLn handle ("Ambos jugadores ya han sido registrados.")
-                                                         return game
+         Nothing                                     -> do hPutStrLn handle "Primero debe iniciar una sesión."
+                                                           return game
+         Just g@(Game _ _ _ Nothing  Nothing  _ _ _) -> do hPutStrLn handle ("Se ha registrado '" ++ nick ++ "' para jugar con Blancas.")
+                                                           return (Just (g { white = Just nick }))
+         Just g@(Game _ _ _ (Just _) Nothing  _ _ _) -> do hPutStrLn handle ("Se ha registrado '" ++ nick ++ "' para jugar con Negras.")
+                                                           return (Just (g { black = Just nick }))
+         Just g@(Game _ _ _ (Just _) (Just _) _ _ _) -> do hPutStrLn handle ("Ambos jugadores ya han sido registrados.")
+                                                           return game
 
 handleSTART :: Nick -> Maybe Game -> Handle -> IO (Maybe Game)
 handleSTART _ Nothing handle = do
     hPutStrLn handle "Primero debe iniciar una sesión."
     return Nothing
-handleSTART _ (Just g@(Game _ _ Nothing _ _ _ _)) handle = do
+handleSTART _ (Just g@(Game _ _ _ Nothing _ _ _ _)) handle = do
     hPutStrLn handle ("No hay un jugador asignado para las Blancas.")
     return (Just g)
-handleSTART _ (Just g@(Game _ _ (Just _) Nothing _ _ _)) handle = do
+handleSTART _ (Just g@(Game _ _ _ (Just _) Nothing _ _ _)) handle = do
     hPutStrLn handle ("No hay un jugador asignado para las Negras.")
     return (Just g)
-handleSTART nick (Just g@(Game _ _ (Just player1) (Just player2) _ _ _)) handle = do
+handleSTART nick (Just g@(Game _ _ _ (Just player1) (Just player2) _ _ _)) handle = do
     if nick == player1 || nick == player2 then
         do hPutStrLn handle ("Blancas mueven. Es el turno de '" ++ player1 ++ "'.")
            hPutStrLn handle delimiter 
@@ -136,13 +146,13 @@ handleMOVE :: Nick -> SANMove -> Maybe Game -> Handle -> IO (Maybe Game)
 handleMOVE _ _ Nothing handle = do
     hPutStrLn handle "Primero debe iniciar una sesión."
     return Nothing
-handleMOVE _ _ (Just g@(Game _ _ Nothing _ _ _ _)) handle = do
+handleMOVE _ _ (Just g@(Game _ _ _ Nothing _ _ _ _)) handle = do
     hPutStrLn handle ("No hay un jugador asignado para las Blancas.")
     return (Just g)
-handleMOVE _ _ (Just g@(Game _ _ (Just _) Nothing _ _ _)) handle = do
+handleMOVE _ _ (Just g@(Game _ _ _ (Just _) Nothing _ _ _)) handle = do
     hPutStrLn handle ("No hay un jugador asignado para las Negras.")
     return (Just g)
-handleMOVE nick move (Just g@(Game _ _ (Just player1) (Just player2) brd hs _)) handle = do
+handleMOVE nick move (Just g@(Game _ _ _ (Just player1) (Just player2) brd hs _)) handle = do
     if nick == player1 || nick == player2 then
         if (nick == player1 && turn brd == White) || (nick == player2 && turn brd == Black) then
             do let mbrd = moveSAN move brd
@@ -152,13 +162,18 @@ handleMOVE nick move (Just g@(Game _ _ (Just player1) (Just player2) brd hs _)) 
                     Right brd' -> do let h = history g
                                      let c = turn brd'
                                      if mate c brd' then
-                                         return (Just g { G.board = brd', history = addMove (move++"#") h, result = Just (won (opposite c)) })
+                                         return (Just g { G.board   = brd',
+                                                          history   = addMove (move++"#") h,
+                                                          result    = Just (won (opposite c)),
+                                                          drawOffer = False })
                                      else
                                          {-if stalemate c brd' then
                                              return (Just (g { G.board = brd', history = addMove move h, result = Just G.Draw }))
                                          else-}
                                              let move' = if check c brd' then move++"+" else move in
-                                             return (Just (g { G.board = brd', history = addMove move' h }))
+                                             return (Just (g { G.board   = brd',
+                                                               history   = addMove move' h,
+                                                               drawOffer = False }))
         else
              do hPutStrLn handle ("No es el turno de '" ++ nick ++ "'.")
                 return (Just g)
@@ -168,15 +183,60 @@ handleMOVE nick move (Just g@(Game _ _ (Just player1) (Just player2) brd hs _)) 
     where
         showMoveError WrongTurn   = "Ha querido mover una pieza de su rival."
         showMoveError NoPiece     = "No hay ninguna pieza en el escaque de origen."
-        showMoveError IsCheck     = "Está en jaque."
+        showMoveError IsCheck     = "No olvide que se encuentra en jaque."
         showMoveError CausesCheck = "Su movimiento deja indefenso al rey."
         showMoveError InvalidMove = "La pieza seleccionada no puede hacer ese movimiento."
         showMoveError OverPiece   = "Hay piezas que se interponen en el camino."
         showMoveError CapturesOwn = "Este movimiento captura una de sus propias piezas."
-        showMoveError NoParse     = "No se pudo reconocer la jugada."
+        showMoveError NoParse     = "Movimiento ilegal."
         opposite White = Black
         opposite Black = White
         won c = if c == White then WhiteWon else BlackWon
         addMove m1 []                   = [(1, m1, Nothing)]
         addMove m2 ((n,m1,Nothing):hs)  = (n, m1, Just m2):hs
         addMove m1 h@((n,_,_):hs)       = (n+1, m1, Nothing):h
+
+handleDRAW :: Nick -> Maybe Game -> Handle -> IO (Maybe Game)
+handleDRAW _ Nothing handle = do
+    hPutStrLn handle "Primero debe iniciar una sesión."
+    return Nothing
+handleDRAW _ (Just g@(Game _ _ _ Nothing _ _ _ _)) handle = do
+    hPutStrLn handle ("No hay un jugador asignado para las Blancas.")
+    return (Just g)
+handleDRAW _ (Just g@(Game _ _ _ (Just _) Nothing _ _ _)) handle = do
+    hPutStrLn handle ("No hay un jugador asignado para las Negras.")
+    return (Just g)
+handleDRAW nick (Just g@(Game _ _ True (Just player1) (Just player2) brd _ _)) handle =
+    if (turn brd == White && nick == player2) || (turn brd == Black && nick == player1) then
+        return (Just (g { result = Just G.Draw }))
+    else
+        do hPutStrLn handle "No le corresponde aceptar tablas."
+           return (Just g)
+handleDRAW nick (Just g@(Game _ _ False (Just player1) (Just player2) brd _ _)) handle =
+    if (turn brd == White && nick == player1) || (turn brd == Black && nick == player2) then
+        return (Just (g { drawOffer = True }))
+    else
+        do hPutStrLn handle "No le corresponde ofrecer tablas."
+           return (Just g)
+
+handleRESIGN :: Nick -> Maybe Game -> Handle -> IO (Maybe Game)
+handleRESIGN _ Nothing handle = do
+    hPutStrLn handle "Primero debe iniciar una sesión."
+    return Nothing
+handleRESIGN _ (Just g@(Game _ _ _ Nothing _ _ _ _)) handle = do
+    hPutStrLn handle ("No hay un jugador asignado para las Blancas.")
+    return (Just g)
+handleRESIGN _ (Just g@(Game _ _ _ (Just _) Nothing _ _ _)) handle = do
+    hPutStrLn handle ("No hay un jugador asignado para las Negras.")
+    return (Just g)
+handleRESIGN nick (Just g@(Game _ _ _ (Just player1) (Just player2) brd _ _)) handle =
+    if (turn brd == White && nick == player1) || (turn brd == Black && nick == player2) then
+        do let c = turn brd
+           return (Just (g { drawOffer = False, result = Just $ won (opposite c) }))
+    else
+        do hPutStrLn handle "No le corresponde retirarse."
+           return (Just g)
+    where
+        opposite White = Black
+        opposite Black = White
+        won c = if c == White then WhiteWon else BlackWon
