@@ -1,16 +1,17 @@
 import Chess
 import Chess.FEN
 
-import Game
+import Game as G
 import Input
 
 import Data.Char (isSpace)
 import Data.List (intercalate)
+import Data.Maybe (fromJust)
 import Control.Monad (when)
-import Data.Time (getCurrentTime)
+import Data.Time (getCurrentTime, utctDay)
 import Network.Socket
 import System.Environment (getArgs)
-import System.IO (BufferMode(..), Handle, hClose, hIsEOF, hSetBuffering, hSetEncoding, hGetContents, hGetLine, hPutStrLn, IOMode(..), utf8)
+import System.IO (BufferMode(..), Handle, hClose, hIsEOF, hSetBuffering, hSetEncoding, hGetContents, hGetLine, hPutStr, hPutStrLn, IOMode(..), utf8)
 import Control.Concurrent (forkIO)
 
 runServer :: String -> IO ()
@@ -49,13 +50,35 @@ gameSession game handle addr = do
                                                            gameSession g handle addr
                         Right (Start      nick     ) -> do g <- handleSTART nick game handle
                                                            gameSession g handle addr
-                        Right (Move       nick move) -> hPutStrLn handle (show (Move nick move))
+                        Right (Move       nick move) -> do g <- handleMOVE nick move game handle
+                                                           if g == game then -- el estado del juego no cambió
+                                                               gameSession game handle addr
+                                                           else
+                                                               do let g' = fromJust g
+                                                                  hPutStrLn handle $ showRecentHistory (head $ history g')
+                                                                  hPutStrLn handle delimiter
+                                                                  case (result g') of
+                                                                       Nothing -> do hPutStrLn handle (showWhoMoves g')
+                                                                                     hPutStrLn handle delimiter
+                                                                                     let brd = G.board g'
+                                                                                     hPutStr handle (stringifyBoard (turn brd) brd)
+                                                                                     gameSession g handle addr
+                                                                       Just res-> do hPutStrLn handle (show res)
+                                                                                     hPutStrLn handle delimiter
+                                                                                     let brd = G.board g'
+                                                                                     hPutStr handle (stringifyBoard (turn brd) brd)
+                                                                                     handleCLOSE handle addr
                         Right (Input.Draw nick     ) -> hPutStrLn handle (show (Input.Draw nick))
                         Right (Resign     nick     ) -> hPutStrLn handle (show (Resign nick))
         True  -> do handleCLOSE handle addr
     where
         chomp       = reverse . dropWhile isSpace . reverse -- strip trailing spaces (including newlines)
         showFlatten = intercalate " " . lines . show
+        showRecentHistory (n, m1, Nothing) = (show n) ++ ". " ++ m1
+        showRecentHistory (n, m1, Just m2) = (show n) ++ ". " ++ m1 ++ " " ++ m2
+        showWhoMoves g = let player1 = fromJust $ white g
+                             player2 = fromJust $ black g
+                             color   = turn (G.board g) in (if color == White then ("Blancas mueven. Es el turno de '" ++ player1 ++ "'.") else ("Negras mueven. Es el turno de '" ++ player2 ++ "'."))
 
 toLog :: SockAddr -> String -> IO ()
 toLog addr msg =
@@ -68,7 +91,8 @@ handleSESSION :: Channel -> Maybe Game -> Handle -> IO (Maybe Game)
 handleSESSION chan game handle =
     case game of
          Nothing -> do hPutStrLn handle ("Se ha iniciado una sesión en " ++ chan ++ ".")
-                       return (Just (Game chan getCurrentTime Nothing Nothing defaultBoard [] Nothing))
+                       t <- getCurrentTime 
+                       return (Just (Game chan (utctDay t) Nothing Nothing defaultBoard [] Nothing))
          Just g  -> do hPutStrLn handle ("Ya hay una sesión activa en " ++ site g ++ ".")
                        return (Just g)
 
@@ -103,7 +127,7 @@ handleSTART nick (Just g@(Game _ _ (Just player1) (Just player2) _ _ _)) handle 
     if nick == player1 || nick == player2 then
         do hPutStrLn handle ("Blancas mueven. Es el turno de '" ++ player1 ++ "'.")
            hPutStrLn handle delimiter 
-           hPutStrLn handle (stringifyBoard White (Game.board g))
+           hPutStr   handle (stringifyBoard White (G.board g))
     else
         hPutStrLn handle ("'" ++ nick ++ "' no está habilitado para inciar la partida.")
     return (Just g)
@@ -120,9 +144,39 @@ handleMOVE _ _ (Just g@(Game _ _ (Just _) Nothing _ _ _)) handle = do
     return (Just g)
 handleMOVE nick move (Just g@(Game _ _ (Just player1) (Just player2) brd hs _)) handle = do
     if nick == player1 || nick == player2 then
-        do hPutStrLn handle ("Blancas mueven. Es el turno de '" ++ player1 ++ "'.")
-           hPutStrLn handle delimiter 
-           hPutStrLn handle (stringifyBoard White (Game.board g))
+        if (nick == player1 && turn brd == White) || (nick == player2 && turn brd == Black) then
+            do let mbrd = moveSAN move brd
+               case mbrd of
+                    Left  err  -> do hPutStrLn handle $ showMoveError err ++ " Intente de nuevo."
+                                     return (Just g)
+                    Right brd' -> do let h = history g
+                                     let c = turn brd'
+                                     if mate c brd' then
+                                         return (Just g { G.board = brd', history = addMove (move++"#") h, result = Just (won (opposite c)) })
+                                     else
+                                         {-if stalemate c brd' then
+                                             return (Just (g { G.board = brd', history = addMove move h, result = Just G.Draw }))
+                                         else-}
+                                             let move' = if check c brd' then move++"+" else move in
+                                             return (Just (g { G.board = brd', history = addMove move' h }))
+        else
+             do hPutStrLn handle ("No es el turno de '" ++ nick ++ "'.")
+                return (Just g)
     else
-        hPutStrLn handle ("'" ++ nick ++ "' no está habilitado para inciar la partida.")
-    return (Just g)
+        do hPutStrLn handle ("'" ++ nick ++ "' no está habilitado para mover.")
+           return (Just g)
+    where
+        showMoveError WrongTurn   = "Ha querido mover una pieza de su rival."
+        showMoveError NoPiece     = "No hay ninguna pieza en el escaque de origen."
+        showMoveError IsCheck     = "Está en jaque."
+        showMoveError CausesCheck = "Su movimiento deja indefenso al rey."
+        showMoveError InvalidMove = "La pieza seleccionada no puede hacer ese movimiento."
+        showMoveError OverPiece   = "Hay piezas que se interponen en el camino."
+        showMoveError CapturesOwn = "Este movimiento captura una de sus propias piezas."
+        showMoveError NoParse     = "No se pudo reconocer la jugada."
+        opposite White = Black
+        opposite Black = White
+        won c = if c == White then WhiteWon else BlackWon
+        addMove m1 []                   = [(1, m1, Nothing)]
+        addMove m2 ((n,m1,Nothing):hs)  = (n, m1, Just m2):hs
+        addMove m1 h@((n,_,_):hs)       = (n+1, m1, Nothing):h

@@ -10,20 +10,26 @@ import Data.List
 import Data.Maybe
 import Data.Time
 
-
 data Result  = WhiteWon
              | BlackWon
              | Draw
              deriving Eq
+             
+instance Show Result where
+    show WhiteWon  = "Blancas ganan. 1-0"
+    show BlackWon  = "Negras ganan. 0-1"
+    show Game.Draw = "Tablas. 1/2-1/2"
+
+type MoveHistory = [(Int, SANMove, Maybe SANMove)]
 
 data Game = Game { site    :: Channel
-                 , date    :: IO UTCTime
+                 , date    :: Day
                  , white   :: Maybe Nick
                  , black   :: Maybe Nick
                  , board   :: Board
-                 , history :: [(Int, SANMove, Maybe SANMove)]
+                 , history :: MoveHistory
                  , result  :: Maybe Result
-                 }
+                 } deriving Eq
 
 stringifyPiece :: Maybe Piece -> String
 stringifyPiece Nothing = "   "

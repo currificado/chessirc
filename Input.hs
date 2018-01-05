@@ -11,8 +11,10 @@ Parser para los mensajes entrantes
 
 -}
 
-import Text.Parsec ((<|>), ParseError, eof, many1, parse, try)
-import Text.Parsec.Char (alphaNum, char, letter, space, string)
+import Data.Char (isAlphaNum)
+
+import Text.Parsec ((<|>), ParseError, eof, many1, parse, satisfy, try)
+import Text.Parsec.Char (char, letter, space, string)
 import Text.Parsec.String (Parser)
 
 import Control.Applicative ((<*))
@@ -64,7 +66,7 @@ move = do string "MOVE"
           space
           nick <- word
           space
-          move <- many1 alphaNum
+          move <- many1 (satisfy (\x -> isAlphaNum x || x == '-'))
           return (Move nick move)
 
 draw :: Parser Message
