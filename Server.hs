@@ -219,10 +219,13 @@ handleDRAW nick (Just g@(Game _ _ True (Just player1) (Just player2) brd _ _)) h
            return (Just g)
 handleDRAW nick (Just g@(Game _ _ False (Just player1) (Just player2) brd _ _)) handle =
     if (turn brd == White && nick == player1) || (turn brd == Black && nick == player2) then
-        return (Just (g { drawOffer = True }))
+        do hPutStrLn handle (offerDrawMsg (turn brd) nick)
+           return (Just (g { drawOffer = True }))
     else
         do hPutStrLn handle "No le corresponde ofrecer tablas."
            return (Just g)
+    where
+        offerDrawMsg color nick = if color == White then "Blancas ('" ++ nick ++ "') ofrecen tablas." else "Negras ('" ++ nick ++ "') ofrecen tablas."
 
 handleRESIGN :: Nick -> Maybe Game -> Handle -> IO (Maybe Game)
 handleRESIGN _ Nothing handle = do
@@ -235,15 +238,13 @@ handleRESIGN _ (Just g@(Game _ _ _ (Just _) Nothing _ _ _)) handle = do
     hPutStrLn handle ("No hay un jugador asignado para las Negras.")
     return (Just g)
 handleRESIGN nick (Just g@(Game _ _ _ (Just player1) (Just player2) brd _ _)) handle =
-    if (turn brd == White && nick == player1) || (turn brd == Black && nick == player2) then
-        do let c = turn brd
-           return (Just (g { drawOffer = False, result = Just $ won (opposite c) }))
+    if nick == player1 || nick == player2 then
+        return (Just (g { drawOffer = False, result = Just $ won (winner) }))
     else
-        do hPutStrLn handle "No le corresponde retirarse."
+        do hPutStrLn handle "Usted no participa del juego."
            return (Just g)
     where
-        opposite White = Black
-        opposite Black = White
-        won c = if c == White then WhiteWon else BlackWon
+        winner = if nick == player1 then Black else White
+        won c  = if c == White then WhiteWon else BlackWon
 
 main = runServer "4321"
