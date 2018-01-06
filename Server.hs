@@ -245,3 +245,5 @@ handleRESIGN nick (Just g@(Game _ _ _ (Just player1) (Just player2) brd _ _)) ha
         opposite White = Black
         opposite Black = White
         won c = if c == White then WhiteWon else BlackWon
+
+main = runServer "4321"

@@ -37,12 +37,12 @@ stringifyPiece Nothing = "   "
 stringifyPiece (Just (Piece c t)) = fg c ++ " " ++ tx t ++ " "
     where fg White  = "<bWHITE>"
           fg Black  = "<bBLACK>"
-          tx Rook   = "R"
-          tx Knight = "N"
-          tx Bishop = "B"
-          tx Queen  = "Q"
-          tx King   = "K"
-          tx Pawn   = "P"
+          tx Rook   = "♜"
+          tx Knight = "♞"
+          tx Bishop = "♝"
+          tx Queen  = "♛"
+          tx King   = "♚"
+          tx Pawn   = "♟"
 
 stringifySquare :: Color -> Maybe Piece -> String
 stringifySquare c p = bg c ++ stringifyPiece p
