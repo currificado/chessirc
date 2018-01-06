@@ -42,7 +42,7 @@ session :: Parser Message
 session = do string  "SESSION"
              space
              hashtag <- char '#'
-             chan    <- word
+             chan    <-  many1 (satisfy (\x -> isAlphaNum x || x == '_' || x == '-'))
              return (Session (hashtag:chan))
 
 close :: Parser Message
