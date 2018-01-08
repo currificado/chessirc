@@ -186,14 +186,7 @@ handleMOVE nick move (Just g@(Game _ _ _ (Just player1) (Just player2) brd hs _)
         do hPutStrLn handle ("'" ++ nick ++ "' no está habilitado para mover.")
            return (Just g)
     where
-        showMoveError WrongTurn   = "Ha querido mover una pieza de su rival."
-        showMoveError NoPiece     = "No hay ninguna pieza en el escaque de origen."
-        showMoveError IsCheck     = "No olvide que se encuentra en jaque."
-        showMoveError CausesCheck = "Su movimiento deja indefenso al rey."
-        showMoveError InvalidMove = "La pieza seleccionada no puede hacer ese movimiento."
-        showMoveError OverPiece   = "Hay piezas que se interponen en el camino."
-        showMoveError CapturesOwn = "Este movimiento captura una de sus propias piezas."
-        showMoveError NoParse     = "Movimiento ilegal."
+        showMoveError _ = "Movimiento ilegal."
         opposite White = Black
         opposite Black = White
         won c = if c == White then WhiteWon else BlackWon
@@ -239,12 +232,14 @@ handleRESIGN _ (Just g@(Game _ _ _ (Just _) Nothing _ _ _)) handle = do
     return (Just g)
 handleRESIGN nick (Just g@(Game _ _ _ (Just player1) (Just player2) brd _ _)) handle =
     if nick == player1 || nick == player2 then
-        return (Just (g { drawOffer = False, result = Just $ won (winner) }))
+        return (Just (g { drawOffer = False, result = Just $ won (winner (turn brd)) }))
     else
         do hPutStrLn handle "Usted no participa del juego."
            return (Just g)
     where
-        winner = if nick == player1 then Black else White
-        won c  = if c == White then WhiteWon else BlackWon
+        winner c = if nick == player1 then (if nick == player2 then opposite c else Black) else White
+        won c    = if c == White then WhiteWon else BlackWon
+        opposite White = Black
+        opposite Black = White
 
 main = runServer "4321"
