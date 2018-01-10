@@ -11,10 +11,10 @@ Parser para los mensajes entrantes
 
 -}
 
-import Data.Char (isAlphaNum)
+import Data.Char (isSpace)
 
 import Text.Parsec ((<|>), ParseError, eof, many1, parse, satisfy, try)
-import Text.Parsec.Char (char, letter, space, string)
+import Text.Parsec.Char (char, space, string)
 import Text.Parsec.String (Parser)
 
 import Control.Applicative ((<*))
@@ -34,7 +34,7 @@ data Message = Session Channel
 
 -- | Helpers
 word :: Parser String
-word = many1 letter
+word = many1 (satisfy (\x -> not (isSpace x)))
 
 
 -- | Parsers para los distintos mensajes
@@ -42,7 +42,7 @@ session :: Parser Message
 session = do string  "SESSION"
              space
              hashtag <- char '#'
-             chan    <-  many1 (satisfy (\x -> isAlphaNum x || x == '_' || x == '-'))
+             chan    <- word
              return (Session (hashtag:chan))
 
 close :: Parser Message
@@ -66,7 +66,7 @@ move = do string "MOVE"
           space
           nick <- word
           space
-          move <- many1 (satisfy (\x -> isAlphaNum x || x == '-'))
+          move <- word
           return (Move nick move)
 
 draw :: Parser Message
