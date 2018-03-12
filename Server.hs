@@ -116,13 +116,17 @@ gameSession game handle addr = do
                     let m = parseMessage (chomp line)
                     case m of
                         Left  err                    -> do hPutStrLn handle (showFlatten err)
+                                                           hPutStrLn handle endmark
                                                            gameSession game handle addr
                         Right (Session    chan     ) -> do g <- handleSESSION chan game handle
+                                                           hPutStrLn handle endmark 
                                                            gameSession g handle addr
                         Right (Close               ) -> do handleCLOSE handle addr
                         Right (Register   nick     ) -> do g <- handleREGISTER nick game handle
+                                                           hPutStrLn handle endmark
                                                            gameSession g handle addr
                         Right (Start      nick     ) -> do g <- handleSTART nick game handle
+                                                           hPutStrLn handle endmark
                                                            gameSession g handle addr
                         Right (Move       nick move) -> do g <- handleMOVE nick move game handle
                                                            checkAfterMOVE game g
@@ -144,9 +148,10 @@ gameSession game handle addr = do
                                 show $ WhtMoves player1
                               else
                                 show $ BlkMoves player2)
-        checkAfterMOVE previous next = do
+        checkAfterMOVE previous next =
             if previous == next then -- game state didn't change
-                gameSession previous handle addr
+                do hPutStrLn handle endmark
+                   gameSession previous handle addr
             else
                 do let g = fromJust next
                    hPutStrLn handle $ showRecentHistory (head $ history g)
@@ -155,20 +160,25 @@ gameSession game handle addr = do
                                      hPutStrLn handle delimiter
                                      let brd = G.board g
                                      hPutStr handle (stringifyBoard (turn brd) brd)
+                                     hPutStrLn handle endmark
                                      gameSession next handle addr
                        Just res-> do hPutStrLn handle (show res)
                                      hPutStrLn handle delimiter
                                      let brd = G.board g
                                      hPutStr handle (stringifyBoard (turn brd) brd)
+                                     hPutStrLn handle endmark
                                      handleCLOSE handle addr
         checkAfterDRAWorRESIGN previous next = do
             if next == Nothing then
-                gameSession previous handle addr
+                do hPutStrLn handle endmark
+                   gameSession previous handle addr
             else
                 do let g = fromJust next
                    case (result g) of
-                        Nothing -> gameSession next handle addr
+                        Nothing -> do hPutStrLn handle endmark
+                                      gameSession next handle addr
                         Just res-> do hPutStrLn handle (show res)
+                                      hPutStrLn handle endmark
                                       handleCLOSE handle addr
 
 -- | Handler de SESSION
