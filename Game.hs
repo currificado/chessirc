@@ -1,5 +1,11 @@
 module Game where
 
+{-
+
+Definición del datatype Game
+
+-}
+
 import Input
 
 import Chess
@@ -24,7 +30,8 @@ type MoveHistory = [(Int, SANMove, Maybe SANMove)]
 
 data Game = Game { site      :: Channel
                  , date      :: Day
-                 , drawOffer :: Bool
+                 , active    :: Bool
+                 , drawoffer :: Bool
                  , white     :: Maybe Nick
                  , black     :: Maybe Nick
                  , board     :: Board

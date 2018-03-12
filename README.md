@@ -2,7 +2,7 @@
 
 ## Especificación del protocolo
 
-*(La arquitectura de esta aplicación así como el protocolo de comunicación están inspirados en http://irc-chess.sourceforge.net/.)*
+*(La arquitectura de esta aplicación así como el protocolo de comunicación están inspirados en http://irc-chess.sourceforge.net/. El módulo Chess es de Arno van Lumig: https://github.com/ArnoVanLumig/chesshs, pero fue modificado corrigiendo las funciones `stalmate` y `mate`. *
 
 Este documento pretende describir el protocolo que rige la comunicación entre el servidor de ajedrez (escrito en Haskell) y el cliente IRC que actúa como bot.  
 El servidor es quien implementa toda la lógica de negocio requerida por el juego de ajedrez. El cliente simplemente se encarga de: (1) recoger las solicitudes de los jugadores en un canal IRC, digamos #foo, y enviarlas al servidor, y (2) recibir las respuestas de él, para luego mostrarlas en #foo.  
@@ -65,7 +65,7 @@ El jugador `nick` se retira del juego.
 Responden al siguiente formato:
 
 ```
-<message> | <message><delimiter><history><delimiter><board>
+<message><endmark> | <message><delimiter><history><delimiter><board><endmark>
 ```
 
 donde cada uno de estos tokens tienen el siguiente significado:
@@ -84,4 +84,7 @@ donde cada uno de estos tokens tienen el siguiente significado:
                             {por ejemplo, "1. e4"}
 
 <string>            ::=     cualquier secuencia de caracteres excepto <delimiter>
+
+<endmark>           ::=     "-###-"
+                            {esta secuencia indica el fin de un mensaje}
 ```
