@@ -1,4 +1,4 @@
-# Ajedrez a través de IRC
+# chessirc - Cómo jugar ajedrez a través de IRC
 
 ## Especificación del protocolo
 
@@ -91,4 +91,52 @@ donde cada uno de estos tokens tienen el siguiente significado:
 
 <endmark>           ::=     "-###-"
                             {esta secuencia indica el fin de un mensaje}
+```
+
+#### Código de colores
+
+Para ejemplificar la codificación de los escaques, lo mejor es ver una sesión completa a través de `telnet`:
+
+```
+pierrot@TOSHIBA-Debian-pbz:~$ telnet localhost 4321
+Trying ::1...
+Trying 127.0.0.1...
+Connected to localhost.
+Escape character is '^]'.
+SESSION #chess
+Se ha iniciado una sesión en #chess.
+-###-
+REGISTER netman    
+Se ha registrado 'netman' para jugar con Blancas.
+-###-
+REGISTER pierrot
+Se ha registrado 'pierrot' para jugar con Negras.
+-###-
+START pierrot
+Blancas mueven. Es el turno de 'netman'.
+<:=:>
+8 <BYELLOW><bBLACK> ♜ <BBLUE><bBLACK> ♞ <BYELLOW><bBLACK> ♝ <BBLUE><bBLACK> ♛ <BYELLOW><bBLACK> ♚ <BBLUE><bBLACK> ♝ <BYELLOW><bBLACK> ♞ <BBLUE><bBLACK> ♜ <NORMAL>
+7 <BBLUE><bBLACK> ♟ <BYELLOW><bBLACK> ♟ <BBLUE><bBLACK> ♟ <BYELLOW><bBLACK> ♟ <BBLUE><bBLACK> ♟ <BYELLOW><bBLACK> ♟ <BBLUE><bBLACK> ♟ <BYELLOW><bBLACK> ♟ <NORMAL>
+6 <BYELLOW>   <BBLUE>   <BYELLOW>   <BBLUE>   <BYELLOW>   <BBLUE>   <BYELLOW>   <BBLUE>   <NORMAL>
+5 <BBLUE>   <BYELLOW>   <BBLUE>   <BYELLOW>   <BBLUE>   <BYELLOW>   <BBLUE>   <BYELLOW>   <NORMAL>
+4 <BYELLOW>   <BBLUE>   <BYELLOW>   <BBLUE>   <BYELLOW>   <BBLUE>   <BYELLOW>   <BBLUE>   <NORMAL>
+3 <BBLUE>   <BYELLOW>   <BBLUE>   <BYELLOW>   <BBLUE>   <BYELLOW>   <BBLUE>   <BYELLOW>   <NORMAL>
+2 <BYELLOW><bWHITE> ♟ <BBLUE><bWHITE> ♟ <BYELLOW><bWHITE> ♟ <BBLUE><bWHITE> ♟ <BYELLOW><bWHITE> ♟ <BBLUE><bWHITE> ♟ <BYELLOW><bWHITE> ♟ <BBLUE><bWHITE> ♟ <NORMAL>
+1 <BBLUE><bWHITE> ♜ <BYELLOW><bWHITE> ♞ <BBLUE><bWHITE> ♝ <BYELLOW><bWHITE> ♛ <BBLUE><bWHITE> ♚ <BYELLOW><bWHITE> ♝ <BBLUE><bWHITE> ♞ <BYELLOW><bWHITE> ♜ <NORMAL>
+   a  b  c  d  e  f  g  h
+-###-
+MOVE netman d4
+1. d4
+Negras mueven. Es el turno de 'pierrot'.
+<:=:>
+1 <BYELLOW><bWHITE> ♜ <BBLUE><bWHITE> ♞ <BYELLOW><bWHITE> ♝ <BBLUE><bWHITE> ♚ <BYELLOW><bWHITE> ♛ <BBLUE><bWHITE> ♝ <BYELLOW><bWHITE> ♞ <BBLUE><bWHITE> ♜ <NORMAL>
+2 <BBLUE><bWHITE> ♟ <BYELLOW><bWHITE> ♟ <BBLUE><bWHITE> ♟ <BYELLOW><bWHITE> ♟ <BBLUE>   <BYELLOW><bWHITE> ♟ <BBLUE><bWHITE> ♟ <BYELLOW><bWHITE> ♟ <NORMAL>
+3 <BYELLOW>   <BBLUE>   <BYELLOW>   <BBLUE>   <BYELLOW>   <BBLUE>   <BYELLOW>   <BBLUE>   <NORMAL>
+4 <BBLUE>   <BYELLOW>   <BBLUE>   <BYELLOW>   <BBLUE><bWHITE> ♟ <BYELLOW>   <BBLUE>   <BYELLOW>   <NORMAL>
+5 <BYELLOW>   <BBLUE>   <BYELLOW>   <BBLUE>   <BYELLOW>   <BBLUE>   <BYELLOW>   <BBLUE>   <NORMAL>
+6 <BBLUE>   <BYELLOW>   <BBLUE>   <BYELLOW>   <BBLUE>   <BYELLOW>   <BBLUE>   <BYELLOW>   <NORMAL>
+7 <BYELLOW><bBLACK> ♟ <BBLUE><bBLACK> ♟ <BYELLOW><bBLACK> ♟ <BBLUE><bBLACK> ♟ <BYELLOW><bBLACK> ♟ <BBLUE><bBLACK> ♟ <BYELLOW><bBLACK> ♟ <BBLUE><bBLACK> ♟ <NORMAL>
+8 <BBLUE><bBLACK> ♜ <BYELLOW><bBLACK> ♞ <BBLUE><bBLACK> ♝ <BYELLOW><bBLACK> ♚ <BBLUE><bBLACK> ♛ <BYELLOW><bBLACK> ♝ <BBLUE><bBLACK> ♞ <BYELLOW><bBLACK> ♜ <NORMAL>
+   h  g  f  e  d  c  b  a
+-###-
 ```
