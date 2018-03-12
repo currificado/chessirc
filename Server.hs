@@ -119,7 +119,7 @@ gameSession game handle addr = do
                                                            hPutStrLn handle endmark
                                                            gameSession game handle addr
                         Right (Session    chan     ) -> do g <- handleSESSION chan game handle
-                                                           hPutStrLn handle endmark 
+                                                           hPutStrLn handle endmark
                                                            gameSession g handle addr
                         Right (Close               ) -> do handleCLOSE handle addr
                         Right (Register   nick     ) -> do g <- handleREGISTER nick game handle
@@ -168,7 +168,7 @@ gameSession game handle addr = do
                                      hPutStr handle (stringifyBoard (turn brd) brd)
                                      hPutStrLn handle endmark
                                      handleCLOSE handle addr
-        checkAfterDRAWorRESIGN previous next = do
+        checkAfterDRAWorRESIGN previous next =
             if next == Nothing then
                 do hPutStrLn handle endmark
                    gameSession previous handle addr
@@ -264,8 +264,8 @@ handleMOVE nick move (Just g@(Game _ _ True _ (Just player1) (Just player2) brd 
                                                               history   = addMove move' h,
                                                               drawoffer = False }))
         else
-             do hPutStrLn handle (show $ Main.WrongTurn nick)
-                return (Just g)
+            do hPutStrLn handle (show $ Main.WrongTurn nick)
+               return (Just g)
     else
         do hPutStrLn handle (show UnableMove)
            return (Just g)
@@ -297,11 +297,11 @@ handleDRAW nick (Just g@(Game _ _ True False (Just player1) (Just player2) brd _
         do hPutStrLn handle (show UnableOfferDraw)
            return (Just g)
     where
-        offerDrawMsg color nick = if color == White then 
+        offerDrawMsg color nick = if color == White then
                                       show $ WhtOffersDraw nick
                                   else
                                       show $ BlkOffersDraw nick
-                                      
+
 -- | Handler de RESIGN
 handleRESIGN :: Nick -> Maybe Game -> Handle -> IO (Maybe Game)
 handleRESIGN _ Nothing handle = do
