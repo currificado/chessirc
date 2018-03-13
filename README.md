@@ -1,4 +1,4 @@
-# chessirc - Cómo jugar ajedrez a través de IRC
+# chessirc —una manera simple de jugar ajedrez en IRC
 
 ## Especificación del protocolo
 
@@ -7,8 +7,8 @@
 Este documento pretende describir el protocolo que rige la comunicación entre el _servidor de ajedrez_ (escrito en Haskell) y el _cliente IRC_ que actúa como bot.  
 El servidor es quien implementa toda la lógica de negocio requerida por el juego de ajedrez. El cliente simplemente se encarga de: 
 
-* Recoger las solicitudes de los jugadores en un canal IRC, digamos #foo, y enviarlas al servidor.
-* Recibir las respuestas del servidor para luego mostrarlas en #foo.
+* Recoger las solicitudes de los jugadores en un canal IRC, digamos _#foo_, y enviarlas al servidor.
+* Recibir las respuestas del servidor para luego mostrarlas en _#foo_.
 
 Los mensajes enviados del cliente al servidor son descritos a continuación. Los mensajes del servidor al cliente son documentados después, junto con el código de colores empleado.
 
