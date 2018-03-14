@@ -72,7 +72,7 @@ Responden al siguiente formato:
 <message><endmark> | <message><delimiter><history><delimiter><board><endmark>
 ```
 
-donde cada uno de estos tokens tienen el siguiente significado:
+donde cada uno de estos tokens tiene el siguiente significado:
 
 ```
 <message>           ::=     <string>
