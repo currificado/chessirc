@@ -37,10 +37,10 @@ Se registra el jugador `nick`. El primero que se registre será las blancas y el
 
 4. 
 ```
-START <nick>
+START <nick> <FEN>
 ```
 
-Comienza el juego. El jugador `nick` debe haberse registrado previamente a esa partida.
+Comienza el juego en la posición dada por `FEN` (notación Forsyth-Eduards). El jugador `nick` debe haberse registrado previamente a esa partida.
 
 5. 
 ```
@@ -51,12 +51,19 @@ Realiza una jugada. El parámetro `nick` es el nick del jugador que realiza el m
 
 6. 
 ```
+POSITION
+```
+
+Retorna la posición actual en notación FEN.
+
+7. 
+```
 DRAW <nick>
 ```
 
 El jugador `nick` ofrece o acepta tablas, dependiendo del turno.
 
-7. 
+8. 
 ```
 RESIGN <nick>
 ```

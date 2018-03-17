@@ -38,6 +38,7 @@ data OutgMsg = StartSession Channel
              | MissingWhite
              | MissingBlack
              | UnstarteredGame
+             | WrongFEN FEN
              | WhtMoves Nick
              | BlkMoves Nick
              | WrongTurn Nick
@@ -62,6 +63,7 @@ instance Show OutgMsg where
     show  MissingWhite         = "No hay un jugador asignado para las Blancas."
     show  MissingBlack         = "No hay un jugador asignado para las Negras."
     show  UnstarteredGame      = "Aún no se ha iniciado la partida."
+    show (WrongFEN       fen ) = "La cadena '" ++ fen ++ "' no define una posición válida según la notación FEN."
     show (WhtMoves       nick) = "Blancas mueven. Es el turno de '" ++ nick ++ "'."
     show (BlkMoves       nick) = "Negras mueven. Es el turno de '" ++ nick ++ "'."
     show (Main.WrongTurn nick) = "No es el turno de '" ++ nick ++ "'."
@@ -87,6 +89,10 @@ toLog addr msg =
 opposite :: Color -> Color
 opposite White = Black
 opposite Black = White
+
+won :: Color -> Result
+won White = WhiteWon
+won Black = BlackWon
 
 runServer :: String -> IO ()
 runServer port = withSocketsDo $ do 
@@ -125,11 +131,13 @@ gameSession game handle addr = do
                         Right (Register   nick     ) -> do g <- handleREGISTER nick game handle
                                                            hPutStrLn handle endmark
                                                            gameSession g handle addr
-                        Right (Start      nick     ) -> do g <- handleSTART nick game handle
-                                                           hPutStrLn handle endmark
-                                                           gameSession g handle addr
+                        Right (Start      nick  fen) -> do g <- handleSTART nick fen game handle
+                                                           checkAfterSTART g
                         Right (Move       nick move) -> do g <- handleMOVE nick move game handle
                                                            checkAfterMOVE game g
+                        Right (Position            ) -> do handlePOSITION game handle
+                                                           hPutStrLn handle endmark
+                                                           gameSession game handle addr
                         Right (Input.Draw nick     ) -> do g <- handleDRAW nick game handle
                                                            checkAfterDRAWorRESIGN game g
                         Right (Resign     nick     ) -> do g <- handleRESIGN nick game handle
@@ -180,6 +188,23 @@ gameSession game handle addr = do
                         Just res-> do hPutStrLn handle (show res)
                                       hPutStrLn handle endmark
                                       handleCLOSE handle addr
+        checkAfterSTART (Just g) = if (active g) then
+                                       do case (result g) of
+                                           Nothing -> do hPutStrLn handle (showWhoMoves g)
+                                                         hPutStrLn handle delimiter
+                                                         let brd = G.board g
+                                                         hPutStr handle (stringifyBoard (turn brd) brd)
+                                                         hPutStrLn handle endmark
+                                                         gameSession (Just g) handle addr
+                                           Just res-> do hPutStrLn handle (show res)
+                                                         hPutStrLn handle delimiter
+                                                         let brd = G.board g
+                                                         hPutStr handle (stringifyBoard (turn brd) brd)
+                                                         hPutStrLn handle endmark
+                                                         handleCLOSE handle addr
+                                   else
+                                       do hPutStrLn handle endmark
+                                          gameSession (Just g) handle addr
 
 -- | Handler de SESSION
 handleSESSION :: Channel -> Maybe Game -> Handle -> IO (Maybe Game)
@@ -210,26 +235,33 @@ handleREGISTER nick game handle = do
         Just g@(Game _ _ _ _ (Just _) (Just _) _ _ _) -> do hPutStrLn handle (show AlrdyReg)
                                                             return game
 -- | Handler de START
-handleSTART :: Nick -> Maybe Game -> Handle -> IO (Maybe Game)
-handleSTART _ Nothing handle = do
+handleSTART :: Nick -> FEN -> Maybe Game -> Handle -> IO (Maybe Game)
+handleSTART _ _ Nothing handle = do
     hPutStrLn handle (show NonExSession)
     return Nothing
-handleSTART _ (Just g@(Game _ _ False _ Nothing _ _ _ _)) handle = do
+handleSTART _ _ (Just g@(Game _ _ False _ Nothing _ _ _ _)) handle = do
     hPutStrLn handle (show MissingWhite)
     return (Just g)
-handleSTART _ (Just g@(Game _ _ False _ (Just _) Nothing _ _ _)) handle = do
+handleSTART _ _ (Just g@(Game _ _ False _ (Just _) Nothing _ _ _)) handle = do
     hPutStrLn handle (show MissingBlack)
     return (Just g)
-handleSTART nick (Just g@(Game _ _ False _ (Just player1) (Just player2) _ _ _)) handle = do
+handleSTART nick fen (Just g@(Game _ _ False _ (Just player1) (Just player2) _ _ _)) handle = do
     if nick == player1 || nick == player2 then
-        do hPutStrLn handle (show $ WhtMoves player1)
-           hPutStrLn handle delimiter 
-           hPutStr   handle (stringifyBoard White (G.board g))
-           return (Just g {active = True})
+        case (fromFEN fen) of
+            Nothing   -> do hPutStrLn handle (show $ WrongFEN fen)
+                            return (Just g)
+            (Just brd)-> do let c = turn brd
+                            if mate c brd then
+                                return (Just g { active = True, G.board = brd, result = Just (won (opposite c)) })
+                            else
+                                if stalemate c brd then
+                                    return (Just g { active = True, G.board = brd, result = Just G.Draw })
+                                else
+                                    return (Just g { active = True, G.board = brd })
     else
         do hPutStrLn handle (show UnableStart)
            return (Just g)
-handleSTART nick (Just g@(Game _ _ True _ _ _ _ _ _)) handle = do
+handleSTART nick _ (Just g@(Game _ _ True _ _ _ _ _ _)) handle = do
     hPutStrLn handle (show AlrdyStarted)
     return (Just g)
 
@@ -252,16 +284,16 @@ handleMOVE nick move (Just g@(Game _ _ True _ (Just player1) (Just player2) brd 
                                     let c = turn brd'
                                     if mate c brd' then
                                         return (Just g { G.board   = brd',
-                                                         history   = addMove (move++"#") h,
+                                                         history   = addMove c (move++"#") h,
                                                          result    = Just (won (opposite c)),
                                                          drawoffer = False })
                                     else
                                         if stalemate c brd' then
-                                            return (Just (g { G.board = brd', history = addMove move h, result = Just G.Draw }))
+                                            return (Just (g { G.board = brd', history = addMove c move h, result = Just G.Draw }))
                                         else
                                             let move' = if check c brd' then move++"+" else move in
                                             return (Just (g { G.board   = brd',
-                                                              history   = addMove move' h,
+                                                              history   = addMove c move' h,
                                                               drawoffer = False }))
         else
             do hPutStrLn handle (show $ Main.WrongTurn nick)
@@ -271,9 +303,19 @@ handleMOVE nick move (Just g@(Game _ _ True _ (Just player1) (Just player2) brd 
            return (Just g)
     where
         won c = if c == White then WhiteWon else BlackWon
-        addMove m1 []                   = [(1, m1, Nothing)]
-        addMove m2 ((n,m1,Nothing):hs)  = (n, m1, Just m2):hs
-        addMove m1 h@((n,_,_):hs)       = (n+1, m1, Nothing):h
+        addMove Black m1 []               = [(1, m1, Nothing)]
+        addMove White m1 []               = [(1, "...", Just m1)]
+        addMove _ m2 ((n,m1,Nothing):hs)  = (n, m1, Just m2):hs
+        addMove _ m1 h@((n,_,_):hs)       = (n+1, m1, Nothing):h
+
+-- | Handler de POSITION
+handlePOSITION :: Maybe Game -> Handle -> IO()
+handlePOSITION Nothing handle = do
+    hPutStrLn handle (show NonExSession)
+handlePOSITION (Just g@(Game _ _ False _ _ _ _ _ _)) handle = do
+    hPutStrLn handle (show UnstarteredGame)
+handlePOSITION (Just g@(Game _ _ True _ _ _ brd _ _)) handle = do
+    hPutStrLn handle (toFEN brd)
 
 -- | Handler de DRAW
 handleDRAW :: Nick -> Maybe Game -> Handle -> IO (Maybe Game)
@@ -318,7 +360,6 @@ handleRESIGN nick (Just g@(Game _ _ True _ (Just player1) (Just player2) brd _ _
            return (Just g)
     where
         winner c = if nick == player1 then (if nick == player2 then opposite c else Black) else White
-        won c    = if c == White then WhiteWon else BlackWon
 
 -- | Función main
 main = runServer port

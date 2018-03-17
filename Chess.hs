@@ -13,6 +13,13 @@ module Chess( MoveError(..)
             , mate
             , stalemate
             , army
+            , candidateSqrs
+            , okMove
+            , moveAllowed
+            , moveNoCheck
+            , ableToMove
+            , hasLegalMoves
+            , MoveType(..)
             ) where
 
 import           Data.Array
@@ -105,7 +112,7 @@ kingCoords clr brd = listToMaybe $ pieceCoords clr brd King
 
 pieceCoords clr brd piece = [ i | (i, pc) <- (assocs $ board brd), pc == Just (Piece clr piece) ]
 
-okMove x y x2 y2 brd = not $ isLeft $ moveAllowed x y x2 y2  brd
+okMove allowCheck x y x2 y2 brd = not $ isLeft $ moveAllowed allowCheck x y x2 y2  brd
 
 rookValid x y x2 y2 brd
   | x == 0 && y `elem` [0,7] = QueenRookMove
@@ -134,7 +141,7 @@ validMove x y x2 y2 brd = pieceAt x y brd >>= \piece -> validMove' piece where
     | enpassant brd == Just (x2,y2) && isJust (pieceAt x2 y brd) && abs (x2-x) == 1 && y2-y == -1 = Just EnPassant -- en passant
     | otherwise = Nothing
 
-moveAllowed x y x2 y2 brd
+moveAllowed allowCheck x y x2 y2 brd
   | isNothing $ pieceAt x y brd = Left NoPiece
   | owncolor /= turn brd = Left WrongTurn
   | pieceAtDest = Left CapturesOwn
@@ -142,7 +149,7 @@ moveAllowed x y x2 y2 brd
   | pawnIncorrectCapt = Left OverPiece
   | otherwise = case validMove x y x2 y2 brd of
     Nothing -> Left InvalidMove
-    Just mv -> if check owncolor $ moveNoCheck x y x2 y2 mv brd
+    Just mv -> if (not allowCheck) && (check owncolor $ moveNoCheck x y x2 y2 mv brd)
                then Left CausesCheck
                else Right mv
     where
@@ -184,7 +191,7 @@ castcase clr c = if clr == White then map toUpper c else map toLower c
 -- |Is the player of the given colour check?
 check :: Color -> Board -> Bool
 check clr brd = case kingCoords clr brd of
-  Just (kingX, kingY) -> any (\(x,y) -> okMove x y kingX kingY tmpbrd) otherPieces
+  Just (kingX, kingY) -> any (\(x,y) -> okMove True x y kingX kingY tmpbrd) otherPieces
     where otherPieces = piecesOf (otherColor clr) brd
           tmpbrd = brd {turn = otherColor clr}
   Nothing -> False
@@ -217,8 +224,9 @@ candidateSqrs brd (x,y) = let (p, c) = (piece pc, clr pc) in candidateSqrs' p c 
 
 -- |Is the piece at the given coordinates able to move?
 ableToMove :: Board -> (Int, Int) -> Bool
-ableToMove brd (x,y) = any (\(x', y') -> okMove x y x' y' brd) (candidateSqrs brd (x,y))
-  where pc = fromJust $ pieceAt x y brd
+ableToMove brd (x,y) = any (\(x', y') -> okMove False x y x' y' brd) (candidateSqrs brd (x,y))
+  where
+    pc = fromJust $ pieceAt x y brd
 
 -- |Can the player of the given colour make any move?
 hasLegalMoves :: Color -> Board -> Bool
@@ -259,7 +267,7 @@ moveNoCheck x y x2 y2 moveType brd = case moveType of
   DoublePawnMove -> swapTurn $ setEnpassant x2 ((y+y2) `div` 2) $ movePiece x y x2 y2 brd
   EnPassant -> swapTurn $ resetEnpassant $ movePiece x y x2 y2 $ removePiece x2 y brd
 
-move' x y x2 y2 brd = moveAllowed x y x2 y2 brd >>= \movetype -> return (moveNoCheck x y x2 y2 movetype brd)
+move' x y x2 y2 brd = moveAllowed False x y x2 y2 brd >>= \movetype -> return (moveNoCheck x y x2 y2 movetype brd)
 
 -- | Perform a move on the board in coordinate notation like "e2e4", returning either the new board or an error
 move :: [Char] -> Board -> Either MoveError Board

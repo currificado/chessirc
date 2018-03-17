@@ -1,4 +1,5 @@
 module Input ( Channel
+             , FEN
              , Message(..)
              , Nick
              , SANMove
@@ -11,7 +12,7 @@ Parser para los mensajes entrantes
 
 -}
 
-import Data.Char (isSpace)
+import Data.Char (isSpace, isAscii)
 
 import Text.Parsec ((<|>), ParseError, eof, many1, parse, satisfy, try)
 import Text.Parsec.Char (char, space, string)
@@ -22,12 +23,14 @@ import Control.Applicative ((<*))
 type Channel = String
 type Nick    = String
 type SANMove = String
+type FEN     = String
 
 data Message = Session Channel
              | Close
              | Register Nick
-             | Start    Nick
+             | Start    Nick FEN
              | Move     Nick SANMove
+             | Position
              | Draw     Nick
              | Resign   Nick
              deriving (Eq, Show)
@@ -35,6 +38,10 @@ data Message = Session Channel
 -- | Helpers
 word :: Parser String
 word = many1 (satisfy (\x -> not (isSpace x)))
+
+-- | Helpers
+fen :: Parser String
+fen = many1 (satisfy isAscii)
 
 
 -- | Parsers para los distintos mensajes
@@ -59,7 +66,9 @@ start :: Parser Message
 start = do string "START"
            space
            nick <- word
-           return (Start nick)
+           space
+           fen  <- fen
+           return (Start nick fen)
 
 move :: Parser Message
 move = do string "MOVE"
@@ -68,6 +77,10 @@ move = do string "MOVE"
           space
           move <- word
           return (Move nick move)
+
+position :: Parser Message
+position = do string  "POSITION"
+              return Position
 
 draw :: Parser Message
 draw = do string "DRAW"
@@ -89,6 +102,7 @@ parserMsg = try session
         <|> try register
         <|> start
         <|> move
+        <|> position
         <|> draw
         <|> resign
 
