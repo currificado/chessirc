@@ -12,6 +12,7 @@ module Chess( MoveError(..)
             , check
             , mate
             , stalemate
+            , army
             ) where
 
 import           Data.Array
@@ -188,18 +189,50 @@ check clr brd = case kingCoords clr brd of
           tmpbrd = brd {turn = otherColor clr}
   Nothing -> False
 
--- |Can the player of the given colour make any move?
-stalemate :: Color -> Board -> Bool
-stalemate clr brd = case kingCoords clr brd of
-  Just (kx,ky) -> not $ any (\(x,y) -> okMove kx ky x y tmpbrd) (km kx ky)
-  Nothing -> False
+-- |List of pieces of a given color and its corresponding coordinates at the board
+army :: Color -> Board -> [(Int,Int)]
+army clr brd = concat $ map (pieceCoords clr brd) [King, Queen, Rook, Bishop, Knight, Pawn]
+
+-- |List of squares a given piece might go to
+candidateSqrs :: Board -> (Int, Int) -> [(Int, Int)]
+candidateSqrs brd (x,y) = let (p, c) = (piece pc, clr pc) in candidateSqrs' p c (x,y)
   where
-    km kx ky = [(x,y)| x<-[kx-1,kx,kx+1], y<-[ky-1,ky,ky+1], x>=0, y>=0, x<8, y<8]
+    pc = fromJust $ pieceAt x y brd
+    candidateSqrs' King   _ (x, y) = [(x',y')| x'<-[x-1,x,x+1], y'<-[y-1,y,y+1], x'>=0, y'>=0, x'<8, y'<8, (x',y') /= (x,y)]
+    candidateSqrs' Queen  c (x, y) = candidateSqrs' Rook c (x,y) ++ candidateSqrs' Bishop c (x,y)
+    candidateSqrs' Rook   _ (x, y) = [(x',y)| x'<-[0..7], x' /= x] ++ [(x,y')| y'<-[0..7], y' /= y]
+    candidateSqrs' Bishop _ (x, y) = [(x',y')| x'<-[0..7], y'<-[0..7], abs (x' - x) == abs (y' - y)]
+    candidateSqrs' Knight _ (x, y) = filter onBoard [(x+2,y-1),(x+2,y+1),(x-2,y-1),(x-2,y+1),(x+1,y-2),(x+1,y+2),(x-1,y-2),(x-1,y+2)]
+    candidateSqrs' Pawn   White (x, y) = [(x,y')| y'<-[y+1], y'<8 ] ++
+                                           if y == 1 then 
+                                             [(x,3)] ++ [(x',2) | x'<-[x-1,x+1], x'>=0, x'<8]
+                                           else
+                                             []
+    candidateSqrs' Pawn   Black (x, y) = [(x,y')| y'<-[y-1], y'>=0] ++
+                                           if y == 6 then 
+                                             [(x,4)] ++ [(x',5) | x'<-[x-1,x+1], x'>=0, x'<8]
+                                           else
+                                             []
+    onBoard (x,y) = x `elem` [0..7] && y `elem` [0..7]
+
+-- |Is the piece at the given coordinates able to move?
+ableToMove :: Board -> (Int, Int) -> Bool
+ableToMove brd (x,y) = any (\(x', y') -> okMove x y x' y' brd) (candidateSqrs brd (x,y))
+  where pc = fromJust $ pieceAt x y brd
+
+-- |Can the player of the given colour make any move?
+hasLegalMoves :: Color -> Board -> Bool
+hasLegalMoves clr brd = any (\(x,y) -> ableToMove tmpbrd (x,y)) (army clr tmpbrd)
+  where
     tmpbrd = brd {turn = clr}
+
+-- |Is the player with the given colour stalemate
+stalemate :: Color -> Board -> Bool
+stalemate clr brd = not (check clr brd || hasLegalMoves clr brd)
 
 -- |Is the player with the given colour checkmate
 mate :: Color -> Board -> Bool
-mate clr brd = check clr brd && stalemate clr brd
+mate clr brd = check clr brd && not (hasLegalMoves clr brd)
 
 castle brd side
   | castleAllowed brd side = Right (swapTurn $ resetEnpassant $ moveKing $ moveRook brd)

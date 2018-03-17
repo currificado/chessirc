@@ -256,9 +256,9 @@ handleMOVE nick move (Just g@(Game _ _ True _ (Just player1) (Just player2) brd 
                                                          result    = Just (won (opposite c)),
                                                          drawoffer = False })
                                     else
-                                        {-if stalemate c brd' then
+                                        if stalemate c brd' then
                                             return (Just (g { G.board = brd', history = addMove move h, result = Just G.Draw }))
-                                        else-}
+                                        else
                                             let move' = if check c brd' then move++"+" else move in
                                             return (Just (g { G.board   = brd',
                                                               history   = addMove move' h,
