@@ -100,6 +100,7 @@ donde cada uno de estos tokens tiene el siguiente significado:
                             {esta secuencia indica el fin de un mensaje}
 ```
 
+
 #### Código de colores
 
 Para ejemplificar la codificación de los escaques, lo mejor es ver una sesión completa a través de `telnet`:
@@ -147,3 +148,10 @@ Negras mueven. Es el turno de 'pierrot'.
    h  g  f  e  d  c  b  a
 -###-
 ```
+
+
+#### Captura de pantalla
+
+A continuación se muestra al servidor en funcionamiento. El bot `bumble` consiste en un script Perl que actúa de intermediario entre los jugadores y el servidor de ajedrez.
+
+![alt text](https://raw.githubusercontent.com/pierrot14/chessirc/master/Captura%20de%20pantalla%202018-03-18%2001.37.15.png)
