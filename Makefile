@@ -1,4 +1,4 @@
-chessirc : Chess.hs Game.hs Input.hs Server.hs
+chessirc : Chess.hs Chess/FEN.hs Chess/PGN.hs Game.hs Input.hs Server.hs
 	ghc --make Server.hs -o chessirc
 
 clean :
