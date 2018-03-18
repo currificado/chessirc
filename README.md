@@ -2,7 +2,7 @@
 
 ## Especificación del protocolo
 
-**Nota:** La arquitectura de esta aplicación así como el protocolo de comunicación están inspirados en http://irc-chess.sourceforge.net/. El módulo `Chess` es autoría de Arno van Lumig: https://github.com/ArnoVanLumig/chesshs, pero fue modificado corrigiendo las funciones `stalmate` y `mate`.
+**Nota:** La arquitectura de esta aplicación así como el protocolo de comunicación están inspirados en http://irc-chess.sourceforge.net/. El módulo `Chess` es autoría de Arno van Lumig: https://github.com/ArnoVanLumig/chesshs, pero fue modificado corrigiendo las funciones `stalmate` y `mate`, así como otros errores.
 
 Este documento pretende describir el protocolo que rige la comunicación entre el _servidor de ajedrez_ (escrito en Haskell) y el _cliente IRC_ que actúa como bot.  
 El servidor es quien implementa toda la lógica de negocio requerida por el juego de ajedrez. El cliente simplemente se encarga de: 
