@@ -152,6 +152,6 @@ Negras mueven. Es el turno de 'pierrot'.
 
 #### Captura de pantalla
 
-A continuación se muestra al servidor en funcionamiento. El bot `bumble` consiste en un script Perl que actúa de intermediario entre los jugadores y el servidor de ajedrez.
+A continuación se muestra al servidor en funcionamiento. El bot `bumble` consiste en un script Perl que hace de cliente, actuando de intermediario entre los jugadores y el servidor de ajedrez.
 
 ![alt text](https://raw.githubusercontent.com/pierrot14/chessirc/master/Captura%20de%20pantalla%202018-03-18%2001.37.15.png)
