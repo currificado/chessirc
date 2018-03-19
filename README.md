@@ -120,7 +120,7 @@ Se ha registrado 'netman' para jugar con Blancas.
 REGISTER pierrot
 Se ha registrado 'pierrot' para jugar con Negras.
 -###-
-START pierrot
+START pierrot rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -
 Blancas mueven. Es el turno de 'netman'.
 <:=:>
 8 <BYELLOW><bBLACK> ♜ <BBLUE><bBLACK> ♞ <BYELLOW><bBLACK> ♝ <BBLUE><bBLACK> ♛ <BYELLOW><bBLACK> ♚ <BBLUE><bBLACK> ♝ <BYELLOW><bBLACK> ♞ <BBLUE><bBLACK> ♜ <NORMAL>
