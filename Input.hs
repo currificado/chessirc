@@ -12,7 +12,7 @@ Parser para los mensajes entrantes
 
 -}
 
-import Data.Char (isSpace, isAscii)
+import Data.Char (isSpace, isLatin1)
 
 import Text.Parsec ((<|>), ParseError, eof, many1, parse, satisfy, try)
 import Text.Parsec.Char (char, space, string)
@@ -41,7 +41,7 @@ word = many1 (satisfy (\x -> not (isSpace x)))
 
 -- | Helpers
 fen :: Parser String
-fen = many1 (satisfy isAscii)
+fen = many1 (satisfy isLatin1)
 
 
 -- | Parsers para los distintos mensajes
