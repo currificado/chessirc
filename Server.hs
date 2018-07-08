@@ -132,9 +132,10 @@ gameSession game handle addr = do
                                                            hPutStrLn handle endmark
                                                            gameSession g handle addr
                         Right (Start      nick  fen) -> do g <- handleSTART nick fen game handle
-                                                           checkAfterSTART g
+                                                           handleBOARD False White g handle addr
                         Right (Move       nick move) -> do g <- handleMOVE nick move game handle
                                                            checkAfterMOVE game g
+                        Right (Input.Board color   ) -> do handleBOARD True color game handle addr
                         Right (Position            ) -> do handlePOSITION game handle
                                                            hPutStrLn handle endmark
                                                            gameSession game handle addr
@@ -147,64 +148,23 @@ gameSession game handle addr = do
     where
         chomp       = reverse . dropWhile isSpace . reverse -- strip trailing spaces (including newlines)
         showFlatten = intercalate " " . lines . show
-        showRecentHistory (n, m1, Nothing) = (show n) ++ ". " ++ m1
-        showRecentHistory (n, m1, Just m2) = (show n) ++ ". " ++ m1 ++ " " ++ m2
-        showWhoMoves g = let player1 = fromJust $ white g
-                             player2 = fromJust $ black g
-                             color   = turn (G.board g) in
-                             (if color == White then
-                                show $ WhtMoves player1
-                              else
-                                show $ BlkMoves player2)
         checkAfterMOVE previous next =
             if previous == next then -- game state didn't change
                 do hPutStrLn handle endmark
                    gameSession previous handle addr
             else
                 do let g = fromJust next
-                   hPutStrLn handle $ showRecentHistory (head $ history g)
-                   case (result g) of
-                       Nothing -> do hPutStrLn handle (showWhoMoves g)
-                                     hPutStrLn handle delimiter
-                                     let brd = G.board g
-                                     hPutStr handle (stringifyBoard (turn brd) brd)
-                                     hPutStrLn handle endmark
-                                     gameSession next handle addr
-                       Just res-> do hPutStrLn handle (show res)
-                                     hPutStrLn handle delimiter
-                                     let brd = G.board g
-                                     hPutStr handle (stringifyBoard (turn brd) brd)
-                                     hPutStrLn handle endmark
-                                     handleCLOSE handle addr
-        checkAfterDRAWorRESIGN previous next =
-            if next == Nothing then
+                   handleBOARD True (turn $ G.board g) next handle addr
+        checkAfterDRAWorRESIGN previous Nothing =
                 do hPutStrLn handle endmark
                    gameSession previous handle addr
-            else
-                do let g = fromJust next
+        checkAfterDRAWorRESIGN _ (Just g) =
                    case (result g) of
                         Nothing -> do hPutStrLn handle endmark
-                                      gameSession next handle addr
+                                      gameSession (Just g) handle addr
                         Just res-> do hPutStrLn handle (show res)
                                       hPutStrLn handle endmark
                                       handleCLOSE handle addr
-        checkAfterSTART (Just g) = if (active g) then
-                                       do case (result g) of
-                                           Nothing -> do hPutStrLn handle (showWhoMoves g)
-                                                         hPutStrLn handle delimiter
-                                                         let brd = G.board g
-                                                         hPutStr handle (stringifyBoard (turn brd) brd)
-                                                         hPutStrLn handle endmark
-                                                         gameSession (Just g) handle addr
-                                           Just res-> do hPutStrLn handle (show res)
-                                                         hPutStrLn handle delimiter
-                                                         let brd = G.board g
-                                                         hPutStr handle (stringifyBoard (turn brd) brd)
-                                                         hPutStrLn handle endmark
-                                                         handleCLOSE handle addr
-                                   else
-                                       do hPutStrLn handle endmark
-                                          gameSession (Just g) handle addr
 
 -- | Handler de SESSION
 handleSESSION :: Channel -> Maybe Game -> Handle -> IO (Maybe Game)
@@ -308,8 +268,41 @@ handleMOVE nick move (Just g@(Game _ _ True _ (Just player1) (Just player2) brd 
         addMove _ m2 ((n,m1,Nothing):hs)  = (n, m1, Just m2):hs
         addMove _ m1 h@((n,_,_):hs)       = (n+1, m1, Nothing):h
 
+-- | Handler de BOARD
+handleBOARD :: Bool -> Color -> Maybe Game -> Handle -> SockAddr -> IO ()
+handleBOARD verbose _ Nothing handle addr = do
+    when verbose $ hPutStrLn handle (show NonExSession)
+    hPutStrLn handle endmark
+    gameSession Nothing handle addr
+handleBOARD verbose _ (Just g@(Game _ _ False _ _ _ _ _ _)) handle addr = do
+    when verbose $ hPutStrLn handle (show UnstarteredGame)
+    hPutStrLn handle endmark
+    gameSession (Just g) handle addr
+handleBOARD _ clr (Just g@(Game _ _ True _ _ _ brd history res)) handle addr = do
+    when (not $ null history) $ hPutStrLn handle $ showRecentHistory (head $ history)
+    case (result g) of
+        Nothing -> do hPutStrLn handle (showWhoMoves g)
+                      hPutStrLn handle delimiter
+                      hPutStr handle (stringifyBoard clr brd)
+                      hPutStrLn handle endmark
+                      gameSession (Just g) handle addr
+        Just res-> do hPutStrLn handle (show res)
+                      hPutStrLn handle delimiter
+                      hPutStr handle (stringifyBoard clr brd)
+                      hPutStrLn handle endmark
+                      handleCLOSE handle addr
+    where
+        showRecentHistory (n, m1, Nothing) = (show n) ++ ". " ++ m1
+        showRecentHistory (n, m1, Just m2) = (show n) ++ ". " ++ m1 ++ " " ++ m2
+        showWhoMoves g = let player1 = fromJust $ white g
+                             player2 = fromJust $ black g
+                             color   = turn (G.board g) in
+                             (if color == White then
+                                show $ WhtMoves player1
+                              else
+                                show $ BlkMoves player2)
 -- | Handler de POSITION
-handlePOSITION :: Maybe Game -> Handle -> IO()
+handlePOSITION :: Maybe Game -> Handle -> IO ()
 handlePOSITION Nothing handle = do
     hPutStrLn handle (show NonExSession)
 handlePOSITION (Just g@(Game _ _ False _ _ _ _ _ _)) handle = do

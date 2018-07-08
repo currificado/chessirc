@@ -12,14 +12,6 @@ module Chess( MoveError(..)
             , check
             , mate
             , stalemate
-            , army
-            , candidateSqrs
-            , okMove
-            , moveAllowed
-            , moveNoCheck
-            , ableToMove
-            , hasLegalMoves
-            , MoveType(..)
             ) where
 
 import           Data.Array
