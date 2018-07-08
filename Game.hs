@@ -67,3 +67,13 @@ stringifyBoard perpective brd =
           ylist       = if perpective == White then [7,6..0] else [0..7]
           columns     = if perpective == White then ['a'..'h'] else ['h','g'..'a']
     
+translatePiece :: Char -> Char
+translatePiece 'K' = 'R'
+translatePiece 'Q' = 'D'
+translatePiece 'R' = 'T'
+translatePiece 'B' = 'A'
+translatePiece 'N' = 'C'
+translatePiece ch = ch
+
+translate :: SANMove -> SANMove
+translate = map translatePiece

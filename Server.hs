@@ -292,8 +292,8 @@ handleBOARD _ clr (Just g@(Game _ _ True _ _ _ brd history res)) handle addr = d
                       hPutStrLn handle endmark
                       handleCLOSE handle addr
     where
-        showRecentHistory (n, m1, Nothing) = (show n) ++ ". " ++ m1
-        showRecentHistory (n, m1, Just m2) = (show n) ++ ". " ++ m1 ++ " " ++ m2
+        showRecentHistory (n, m1, Nothing) = (show n) ++ ". " ++ translate m1
+        showRecentHistory (n, m1, Just m2) = (show n) ++ ". " ++ translate m1 ++ " " ++ translate m2
         showWhoMoves g = let player1 = fromJust $ white g
                              player2 = fromJust $ black g
                              color   = turn (G.board g) in
