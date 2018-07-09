@@ -37,7 +37,7 @@ Se registra el jugador `nick`. El primero que se registre será las blancas y el
 
 4. 
 ```
-START <nick> <FEN|'default'>
+START <nick> <FEN|'Default'>
 ```
 
 Comienza el juego en la posición dada por `FEN` (notación Forsyth-Eduards). Si es `'default'` es la posición incial por defecto. El jugador `nick` debe haberse registrado previamente a esa partida.
