@@ -40,7 +40,7 @@ Se registra el jugador `nick`. El primero que se registre será las blancas y el
 START <nick> <FEN|'Default'>
 ```
 
-Comienza el juego en la posición dada por `FEN` (notación Forsyth-Eduards). Si es `'default'` es la posición incial por defecto. El jugador `nick` debe haberse registrado previamente a esa partida.
+Comienza el juego en la posición dada por `FEN` (notación Forsyth-Eduards). Si es `'Default'` es la posición inicial por defecto. El jugador `nick` debe haberse registrado previamente a esa partida.
 
 5. 
 ```
@@ -134,7 +134,7 @@ Se ha registrado 'netman' para jugar con Blancas.
 REGISTER pierrot
 Se ha registrado 'pierrot' para jugar con Negras.
 -###-
-START pierrot rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -
+START pierrot Default
 Blancas mueven. Es el turno de 'netman'.
 <:=:>
 8 <BYELLOW><bBLACK> ♜ <BBLUE><bBLACK> ♞ <BYELLOW><bBLACK> ♝ <BBLUE><bBLACK> ♛ <BYELLOW><bBLACK> ♚ <BBLUE><bBLACK> ♝ <BYELLOW><bBLACK> ♞ <BBLUE><bBLACK> ♜ <NORMAL>
