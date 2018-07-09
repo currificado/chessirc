@@ -275,7 +275,7 @@ handleMOVE nick move (Just g@(Game _ _ (Just player1) (Just player2) _ (Just brd
     where
         won c = if c == White then WhiteWon else BlackWon
         addMove Black m1 []               = [(1, m1, Nothing)]
-        addMove White m1 []               = [(1, "...", Just m1)]
+        addMove White m1 []               = [(1, "..", Just m1)]
         addMove _ m2 ((n,m1,Nothing):hs)  = (n, m1, Just m2):hs
         addMove _ m1 h@((n,_,_):hs)       = (n+1, m1, Nothing):h
 
