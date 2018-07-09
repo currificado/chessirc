@@ -10,21 +10,13 @@ import Input
 
 import Chess
 import Chess.FEN
+import Chess.PGN
 
 import Data.Array
 import Data.List
 import Data.Maybe
 import Data.Time
 
-data Result  = WhiteWon
-             | BlackWon
-             | Draw
-             deriving Eq
-             
-instance Show Result where
-    show WhiteWon  = "Blancas ganan. 1-0"
-    show BlackWon  = "Negras ganan. 0-1"
-    show Game.Draw = "Tablas. ½-½"
 
 type MoveHistory = [(Int, SANMove, Maybe SANMove)]
 
@@ -36,7 +28,7 @@ data Game = Game { site            :: Channel
                  , board           :: Maybe Board
                  , drawoffer       :: Bool
                  , history         :: MoveHistory
-                 , result          :: Maybe Result
+                 , result          :: Maybe GameResult
                  } deriving Eq
 
 stringifyPiece :: Maybe Piece -> String

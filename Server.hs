@@ -6,9 +6,10 @@ Módulo Main con el sevidor de ajedrez
 
 import Chess
 import Chess.FEN
+import Chess.PGN as P (GameResult(..))
 
 import Game as G
-import Input
+import Input as I
 
 import Data.Char (isSpace)
 import Data.List (intercalate)
@@ -90,7 +91,7 @@ opposite :: Color -> Color
 opposite White = Black
 opposite Black = White
 
-won :: Color -> Result
+won :: Color -> GameResult
 won White = WhiteWon
 won Black = BlackWon
 
@@ -135,11 +136,11 @@ gameSession game handle addr = do
                                                            handleBOARD False White g handle addr
                         Right (Move       nick move) -> do g <- handleMOVE nick move game handle
                                                            checkAfterMOVE game g
-                        Right (Input.Board color   ) -> do handleBOARD True color game handle addr
+                        Right (I.Board color       ) -> do handleBOARD True color game handle addr
                         Right (Position            ) -> do handlePOSITION game handle
                                                            hPutStrLn handle endmark
                                                            gameSession game handle addr
-                        Right (Input.Draw nick     ) -> do g <- handleDRAW nick game handle
+                        Right (I.Draw nick         ) -> do g <- handleDRAW nick game handle
                                                            checkAfterDRAWorRESIGN game g
                         Right (Resign     nick     ) -> do g <- handleRESIGN nick game handle
                                                            checkAfterDRAWorRESIGN game g
@@ -222,7 +223,7 @@ handleSTART nick fen (Just g@(Game _ _ (Just player1) (Just player2) _ Nothing _
                                     if stalemate c brd then
                                         return (Just g { G.initialPosition = Just brd,
                                                          G.board           = Just brd,
-                                                         result            = Just G.Draw })
+                                                         result            = Just P.Draw })
                                     else
                                         return (Just g { G.initialPosition = Just brd,
                                                          G.board           = Just brd })
@@ -259,7 +260,7 @@ handleMOVE nick move (Just g@(Game _ _ (Just player1) (Just player2) _ (Just brd
                                         if stalemate c brd' then
                                             return (Just (g { G.board = Just brd', 
                                                               history = addMove c move h, 
-                                                              result  = Just G.Draw }))
+                                                              result  = Just P.Draw }))
                                         else
                                             let move' = if check c brd' then move++"+" else move in
                                             return (Just (g { G.board   = Just brd',
@@ -330,7 +331,7 @@ handleDRAW _ (Just g@(Game _ _ _ _ _ Nothing _ _ _)) handle = do
     return (Just g)
 handleDRAW nick (Just g@(Game _ _ (Just player1) (Just player2) _ (Just brd) True _ _)) handle =
     if (turn brd == White && nick == player2) || (turn brd == Black && nick == player1) then
-        return (Just (g { result = Just G.Draw }))
+        return (Just (g { result = Just P.Draw }))
     else
         do hPutStrLn handle (show UnableAcceptDraw)
            return (Just g)

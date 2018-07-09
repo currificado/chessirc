@@ -25,7 +25,12 @@ data PGN = PGN { event :: String
 data GameResult = WhiteWon
                 | BlackWon
                 | Draw
-                deriving (Eq, Show)
+                deriving Eq
+
+instance Show GameResult where
+    show WhiteWon  = "1-0"
+    show BlackWon  = "0-1"
+    show Draw = "1/2-1/2"
 
 pgnParser = many gameParse
 
