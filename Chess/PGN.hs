@@ -20,7 +20,7 @@ data PGN = PGN { event :: String
                , result :: Maybe GameResult
                , initialPosition :: Maybe Board
                , moves :: [Move]
-               } deriving (Show)
+               } deriving (Eq, Show)
 
 data GameResult = WhiteWon
                 | BlackWon
@@ -30,7 +30,7 @@ data GameResult = WhiteWon
 instance Show GameResult where
     show WhiteWon  = "1-0"
     show BlackWon  = "0-1"
-    show Draw = "1/2-1/2"
+    show Draw      = "1/2-1/2"
 
 pgnParser = many gameParse
 

@@ -65,7 +65,7 @@ Retorna la posición actual en notación FEN.
 
 8. 
 ```
-SAVE
+PGN
 ```
 
 Guarda la partida actual en formato PGN en un archivo de texto.

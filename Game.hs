@@ -6,11 +6,14 @@ Definición del datatype Game
 
 -}
 
+import Data.Time.Calendar
+import System.IO
+
 import Input
 
 import Chess
 import Chess.FEN
-import Chess.PGN
+import Chess.PGN as P
 
 import Data.Array
 import Data.List
@@ -21,7 +24,7 @@ import Data.Time
 type MoveHistory = [(Int, SANMove, Maybe SANMove)]
 
 data Game = Game { site            :: Channel
-                 , date            :: Day
+                 , date            :: UTCTime
                  , white           :: Maybe Nick
                  , black           :: Maybe Nick
                  , initialPosition :: Maybe Board
@@ -30,6 +33,37 @@ data Game = Game { site            :: Channel
                  , history         :: MoveHistory
                  , result          :: Maybe GameResult
                  } deriving Eq
+
+toPGN :: Game -> PGN
+-- Pre : Blancas y Negras han sido asignadas
+toPGN (Game chan time (Just w) (Just b) startPos _ _ history res) = 
+    P.PGN "Juego casual" chan (showGregorian $ utctDay time) "-" w b res startPos (map unifyTurnMoves $ reverse history)
+    where
+        unifyTurnMoves (n, "..", Just blackMove)      = show n ++ "." ++ ".. "++ blackMove
+        unifyTurnMoves (n, whiteMove, Nothing)        = show n ++ "." ++ " "  ++ whiteMove
+        unifyTurnMoves (n, whiteMove, Just blackMove) = show n ++ "." ++ " "  ++ whiteMove ++ " " ++ blackMove
+
+showPGN :: PGN -> String
+showPGN (P.PGN event site date rnd whi blk res stpos mvs) = 
+    tagPGN "Event" event ++
+    tagPGN "Site"  site  ++
+    tagPGN "Date"  date  ++
+    tagPGN "Round" rnd   ++
+    tagPGN "White" whi   ++
+    tagPGN "Black" blk   ++
+    tagPGN "Result" (displayResult res) ++
+    (if stpos == Nothing then [] else tagPGN "FEN" (toFEN $ fromJust stpos)) ++
+    "\n" ++
+    displayMoves 1 mvs ++
+    endString res
+    where
+        tagPGN tag val = "[" ++ tag ++ " " ++ "\"" ++ val ++ "\"" ++ "]" ++ "\n"
+        displayMoves _ [] = []       
+        displayMoves n (m:ms) = (m ++ if n `mod` 8 == 0 then "\n" else " ") ++ displayMoves (n+1) ms
+        displayResult Nothing  = "*"
+        displayResult (Just r) = show r
+        endString Nothing  = "\n" ++ "*"
+        endString (Just r) = show r
 
 stringifyPiece :: Maybe Piece -> String
 stringifyPiece Nothing = "   "
@@ -48,7 +82,6 @@ stringifySquare c p = bg c ++ stringifyPiece p
     where bg White = "<BYELLOW>"
           bg Black = "<BBLUE>"
                    
-
 stringifyBoard :: Color -> Board -> String
 stringifyBoard perpective brd =
     unlines ( [show (y+1) ++ " " 
@@ -69,3 +102,10 @@ translatePiece ch = ch
 
 translate :: SANMove -> SANMove
 translate = map translatePiece
+
+savePGN :: String -> PGN -> IO ()
+savePGN filename pgn = do
+    outh <- openFile filename WriteMode
+    hPutStrLn outh (showPGN pgn)
+    hClose outh
+

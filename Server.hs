@@ -15,8 +15,10 @@ import Data.Char (isSpace)
 import Data.List (intercalate)
 import Data.Maybe (fromJust)
 import Control.Monad (when)
-import Data.Time (getCurrentTime, utctDay)
+import Data.Time (getCurrentTime, utctDay, 
+                  utctDayTime, diffTimeToPicoseconds)
 import Network.Socket
+import System.Directory (createDirectoryIfMissing, getHomeDirectory )
 import System.Environment (getArgs)
 import System.IO (BufferMode(..), Handle, 
                   hClose, hIsEOF, hSetBuffering, 
@@ -140,6 +142,9 @@ gameSession game handle addr = do
                         Right (Position            ) -> do handlePOSITION game handle
                                                            hPutStrLn handle endmark
                                                            gameSession game handle addr
+                        Right (I.PGN               ) -> do handlePGN game handle
+                                                           hPutStrLn handle endmark
+                                                           gameSession game handle addr
                         Right (I.Draw nick         ) -> do g <- handleDRAW nick game handle
                                                            checkAfterDRAWorRESIGN game g
                         Right (Resign     nick     ) -> do g <- handleRESIGN nick game handle
@@ -172,8 +177,8 @@ handleSESSION :: Channel -> Maybe Game -> Handle -> IO (Maybe Game)
 handleSESSION chan game handle =
     case game of
         Nothing -> do hPutStrLn handle (show (StartSession chan))
-                      t <- getCurrentTime 
-                      return (Just (Game chan (utctDay t) Nothing Nothing Nothing Nothing False [] Nothing))
+                      now <- getCurrentTime 
+                      return (Just (Game chan now Nothing Nothing Nothing Nothing False [] Nothing))
         Just g  -> do hPutStrLn handle (show $ ExSession (site g))
                       return (Just g)
 
@@ -297,7 +302,8 @@ handleBOARD _ clr (Just g@(Game _ _ _ _ _ (Just brd) _ history res)) handle addr
                       hPutStr handle (stringifyBoard clr brd)
                       hPutStrLn handle endmark
                       gameSession (Just g) handle addr
-        Just res-> do hPutStrLn handle (show res)
+        Just res-> do handlePGN (Just g) handle
+                      hPutStrLn handle (show res)           
                       hPutStrLn handle delimiter
                       hPutStr handle (stringifyBoard clr brd)
                       hPutStrLn handle endmark
@@ -312,6 +318,7 @@ handleBOARD _ clr (Just g@(Game _ _ _ _ _ (Just brd) _ history res)) handle addr
                                 show $ WhtMoves player1
                               else
                                 show $ BlkMoves player2)
+
 -- | Handler de POSITION
 handlePOSITION :: Maybe Game -> Handle -> IO ()
 handlePOSITION Nothing handle = do
@@ -320,6 +327,23 @@ handlePOSITION (Just g@(Game _ _ _ _ _ Nothing _ _ _)) handle = do
     hPutStrLn handle (show UnstarteredGame)
 handlePOSITION (Just g@(Game _ _ _ _ _ (Just brd) _ _ _)) handle = do
     hPutStrLn handle (toFEN brd)
+
+-- | Handler de PGN
+handlePGN :: Maybe Game -> Handle -> IO ()
+handlePGN Nothing handle = do
+    hPutStrLn handle (show NonExSession)
+handlePGN (Just g@(Game _ _ _ _ _ Nothing _ _ _)) handle = do
+    hPutStrLn handle (show UnstarteredGame)
+handlePGN (Just g@(Game chan time (Just w) (Just b) _ (Just brd) _ _ _)) handle = do
+    homedir <- getHomeDirectory
+    createDirectoryIfMissing True (rootDirectory homedir)
+    savePGN (absolutePath homedir) (toPGN g)
+    hPutStrLn handle ("La partida '" ++ relativePath ++ "' fue guardada con éxito.")
+    where
+        rootDirectory h = h ++ "/public_html/" ++ chan ++ "/" 
+        absolutePath h = rootDirectory h ++ relativePath
+        relativePath = w ++ "_vs_" ++ b ++ "-" ++ show (secs time) ++ ".pgn"
+        secs t = (diffTimeToPicoseconds $ utctDayTime t) `div` 10^12
 
 -- | Handler de DRAW
 handleDRAW :: Nick -> Maybe Game -> Handle -> IO (Maybe Game)
