@@ -340,10 +340,10 @@ handlePGN (Just g@(Game chan time (Just w) (Just b) _ (Just brd) _ _ _)) handle 
     savePGN (absolutePath homedir) (toPGN g)
     hPutStrLn handle ("La partida '" ++ relativePath ++ "' fue guardada con éxito.")
     where
-        rootDirectory h = h ++ "/public_html/" ++ chan ++ "/" 
-        absolutePath h = rootDirectory h ++ relativePath
-        relativePath = w ++ "_vs_" ++ b ++ "-" ++ show (secs time) ++ ".pgn"
-        secs t = (diffTimeToPicoseconds $ utctDayTime t) `div` 10^12
+        rootDirectory home = home ++ "/public_html/" ++ chan ++ "/" 
+        absolutePath home = rootDirectory home ++ relativePath
+        relativePath = w ++ "_vs_" ++ b ++ "-" ++ show (diffTimeToSeconds time) ++ ".pgn"
+        diffTimeToSeconds = floor . toRational . utctDayTime
 
 -- | Handler de DRAW
 handleDRAW :: Nick -> Maybe Game -> Handle -> IO (Maybe Game)
