@@ -356,7 +356,9 @@ handleDRAW _ (Just g@(Game _ _ _ _ _ Nothing _ _ _)) handle = do
     return (Just g)
 handleDRAW nick (Just g@(Game _ _ (Just player1) (Just player2) _ (Just brd) True _ _)) handle =
     if (turn brd == White && nick == player2) || (turn brd == Black && nick == player1) then
-        return (Just (g { result = Just P.Draw }))
+        do let g' = Just (g { result = Just P.Draw })
+           handlePGN g' handle
+           return g'
     else
         do hPutStrLn handle (show UnableAcceptDraw)
            return (Just g)
@@ -383,7 +385,9 @@ handleRESIGN _ (Just g@(Game _ _ _ _ _ Nothing _ _ _)) handle = do
     return (Just g)
 handleRESIGN nick (Just g@(Game _ _ (Just player1) (Just player2) _ (Just brd) _ _ _)) handle =
     if nick == player1 || nick == player2 then
-        return (Just (g { drawoffer = False, result = Just $ won (winner (turn brd)) }))
+        do let g' = Just (g { drawoffer = False, result = Just $ won (winner (turn brd)) })
+           handlePGN g' handle
+           return g'
     else
         do hPutStrLn handle (show UnableResign)
            return (Just g)
