@@ -16,7 +16,8 @@ import Data.List (intercalate)
 import Data.Maybe (fromJust)
 import Control.Monad (when)
 import Data.Time (getCurrentTime, utctDay, 
-                  utctDayTime, diffTimeToPicoseconds)
+                  utctDayTime, diffTimeToPicoseconds,
+                  showGregorian)
 import Network.Socket
 import System.Directory (createDirectoryIfMissing, getHomeDirectory )
 import System.Environment (getArgs)
@@ -342,7 +343,7 @@ handlePGN (Just g@(Game chan time (Just w) (Just b) _ (Just brd) _ _ _)) handle 
     where
         rootDirectory home = home ++ "/public_html/" ++ chan ++ "/" 
         absolutePath home = rootDirectory home ++ relativePath
-        relativePath = w ++ "_vs_" ++ b ++ "-" ++ show (diffTimeToSeconds time) ++ ".pgn"
+        relativePath = w ++ "_vs_" ++ b ++ "-" ++ (showGregorian $ utctDay time) ++ show (diffTimeToSeconds time) ++ ".pgn"
         diffTimeToSeconds = floor . toRational . utctDayTime
 
 -- | Handler de DRAW
