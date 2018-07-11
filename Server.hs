@@ -139,14 +139,14 @@ gameSession game handle addr = do
                                                            handleBOARD False White g handle addr
                         Right (Move       nick move) -> do g <- handleMOVE nick move game handle
                                                            checkAfterMOVE game g
-                        Right (I.Board color       ) -> do handleBOARD True color game handle addr
+                        Right (I.Board    color    ) -> do handleBOARD True color game handle addr
                         Right (Position            ) -> do handlePOSITION game handle
                                                            hPutStrLn handle endmark
                                                            gameSession game handle addr
                         Right (I.PGN               ) -> do handlePGN game handle
                                                            hPutStrLn handle endmark
                                                            gameSession game handle addr
-                        Right (I.Draw nick         ) -> do g <- handleDRAW nick game handle
+                        Right (I.Draw     nick     ) -> do g <- handleDRAW nick game handle
                                                            checkAfterDRAWorRESIGN game g
                         Right (Resign     nick     ) -> do g <- handleRESIGN nick game handle
                                                            checkAfterDRAWorRESIGN game g

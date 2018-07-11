@@ -59,7 +59,7 @@ showPGN (P.PGN event site date rnd whi blk res stpos mvs) =
     where
         tagPGN tag val = "[" ++ tag ++ " " ++ "\"" ++ val ++ "\"" ++ "]" ++ "\n"
         displayMoves _ [] = []       
-        displayMoves n (m:ms) = (m ++ if n `mod` 8 == 0 then "\n" else " ") ++ displayMoves (n+1) ms
+        displayMoves n (m:ms) = (m ++ if n `mod` 5 == 0 then "\n" else " ") ++ displayMoves (n+1) ms
         displayResult Nothing  = "*"
         displayResult (Just r) = show r
         endString Nothing  = "\n" ++ "*"
